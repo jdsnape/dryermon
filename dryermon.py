@@ -37,6 +37,7 @@ class State(object):
 class idle(State):
 	def on_event(self, event):
 		if event > self.threshold:
+			client.publish("myhome/garage/dryer/state",payload="running",retain=True)
 			return running()
 
 class running(State):
@@ -57,8 +58,11 @@ class maybe_finished(State):
 			if self.timer == 0:
 				self.timer = time.time()
 			elif (time.time() - self.end_delay) > self.timer:
+				print("Done!")
+				client.publish("myhome/garage/dryer/state",payload="idle",retain=True)
 				return idle()
 			else:
+				client.publish("myhome/garage/dryer/state",payload="maybe_finished",retain=True)
 				return maybe_finished()
 
 
@@ -68,6 +72,8 @@ class dryer(object):
 
 	def on_event(self, event):
 		self.state = self.state.on_event(event)
+
+
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
