@@ -12,8 +12,8 @@ class State(object):
     def __init__(self):
         print 'Processing current state:', str(self)
 	self.threshold = 100
-	self.end_delay = 300 #time to wait before confirming we're done in seconds	
 	self.timer = 0
+	self.end_delay = 300 #time to wait before confirming we're done in seconds	
 
     def on_event(self, event):
         """
@@ -39,10 +39,11 @@ class idle(State):
 		if event > self.threshold:
 			client.publish("myhome/garage/dryer/state",payload="running",retain=True)
 			return running()
+		else:
+			return idle()
 
 class running(State):
 	def on_event(self, event):
-		print(event)
 		if event < self.threshold:
 			return maybe_finished()
 		else:
@@ -50,20 +51,19 @@ class running(State):
 	
 class maybe_finished(State):
 	def on_event(self, event):
-		print("We think we may be finished, but want to wait a while")
 		#If the power's gone back up then we're not finished
 		if event > self.threshold:
 			return running()
 		else:
 			if self.timer == 0:
 				self.timer = time.time()
+				return self
 			elif (time.time() - self.end_delay) > self.timer:
-				print("Done!")
 				client.publish("myhome/garage/dryer/state",payload="idle",retain=True)
 				return idle()
 			else:
 				client.publish("myhome/garage/dryer/state",payload="maybe_finished",retain=True)
-				return maybe_finished()
+				return self
 
 
 class dryer(object):
@@ -85,7 +85,6 @@ def on_connect(client, userdata, flags, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    print(str(msg.payload))
     dryer.on_event(json.loads(msg.payload)["ENERGY"]["Power"])
 
 
