@@ -11,7 +11,9 @@ class State(object):
     """
     def __init__(self):
         print 'Processing current state:', str(self)
-	self.threshold = 100	
+	self.threshold = 100
+	self.end_delay = 300 #time to wait before confirming we're done in seconds	
+	self.timer = 0
 
     def on_event(self, event):
         """
@@ -43,11 +45,22 @@ class running(State):
 		if event < self.threshold:
 			return maybe_finished()
 		else:
-			return
+			return running()
 	
 class maybe_finished(State):
 	def on_event(self, event):
-		print(event)
+		print("We think we may be finished, but want to wait a while")
+		#If the power's gone back up then we're not finished
+		if event > self.threshold:
+			return running()
+		else:
+			if self.timer == 0:
+				self.timer = time.time()
+			elif (time.time() - self.end_delay) > self.timer:
+				return idle()
+			else:
+				return maybe_finished()
+
 
 class dryer(object):
 	def __init__(self):
