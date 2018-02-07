@@ -62,7 +62,7 @@ class maybe_finished(State):
 				client.publish("myhome/garage/dryer/state",payload="idle",retain=True)
 				return idle()
 			else:
-				client.publish("myhome/garage/dryer/state",payload="maybe_finished",retain=True)
+				#client.publish("myhome/garage/dryer/state",payload="maybe_finished",retain=True)
 				return self
 
 
